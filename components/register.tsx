@@ -21,7 +21,7 @@ function Register() {
   
 
   async function registerUser(amount: number, reffralId: string){
-    if (!amount || amount <= 10) {
+    if (!amount || amount < 10) {
       console.error("Amount must be greater than 10");
       return;
     }
