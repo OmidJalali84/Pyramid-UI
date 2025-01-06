@@ -1,26 +1,36 @@
-import { Step, StepContent, StepLabel, Stepper, Typography, StepIconProps } from "@mui/material";
-import React, { useState,useEffect } from "react";
+import {
+  Step,
+  StepContent,
+  StepLabel,
+  Stepper,
+  Typography,
+  StepIconProps,
+} from "@mui/material";
+import React, { useState, useEffect } from "react";
 import styles from "../app/css/additional-styles/register.module.css";
 import { Web3Provider } from "@/components/web3/Web3Provider";
 import { ConnectButton } from "@/components/web3/customConnectBtn";
-import {contractAddress,usdtAddress , contractABI} from "./web3/helperContract";
+import {
+  contractAddress,
+  usdtAddress,
+  contractABI,
+} from "./web3/helperContract";
 import { config } from "@/components/web3/Web3Provider";
-import { writeContract,readContract} from "wagmi/actions";
-import { erc20Abi,getAddress,parseUnits } from "viem";
+import { writeContract, readContract } from "wagmi/actions";
+import { erc20Abi, getAddress, parseUnits } from "viem";
 import { useAccount } from "wagmi";
 import toast from "react-hot-toast";
 
 function Register() {
   const [activeStep, setActiveStep] = useState(0);
-  const [amount,setAmount]=useState(10);
-  const[reffralId,setReffralId]=useState("")
+  const [amount, setAmount] = useState(10);
+  const [reffralId, setReffralId] = useState("");
   const { address, isConnecting, isDisconnected } = useAccount();
-  const [connectError,setConnectError]=useState("")
-  const[approveError,setApproveError]=useState("")
+  const [connectError, setConnectError] = useState("");
+  const [approveError, setApproveError] = useState("");
   const [showReferralInput, setShowReferralInput] = useState(false);
-  
 
-  async function registerUser(amount: number, reffralId: string){
+  async function registerUser(amount: number, reffralId: string) {
     if (!amount || amount < 10) {
       console.error("Amount must be greater than 10");
       return;
@@ -30,7 +40,7 @@ function Register() {
         address: contractAddress,
         abi: contractABI,
         functionName: "register",
-        args: [ parseUnits(amount.toString(),18) , getAddress(reffralId)],
+        args: [parseUnits(amount.toString(), 18), getAddress(reffralId)],
       });
       console.log("Transaction successful:", result);
     } catch (error) {
@@ -39,45 +49,45 @@ function Register() {
   }
   async function approveToken(amount: number) {
     try {
-      const result = await writeContract(config,{
-        address: usdtAddress, 
-        abi: erc20Abi, 
+      const result = await writeContract(config, {
+        address: usdtAddress,
+        abi: erc20Abi,
         functionName: "approve",
-        args: [contractAddress , parseUnits(amount.toString(),18)], 
+        args: [contractAddress, parseUnits(amount.toString(), 18)],
       });
       console.log("Approval successful:", result);
-      
     } catch (error) {
       console.error("Approval failed:", error);
-      
     }
   }
 
-  async function handleAmount(e:React.ChangeEvent<any>){
-    let amt=Number(e.target.value)
-    setAmount(amt)
-    console.log(amount)
-    
+  function handleAmount(e: React.ChangeEvent<HTMLInputElement>) {
+    const value = e.target.value;
+
+    // Only update if the value is a valid number or empty
+    if (!isNaN(Number(value))) {
+      setAmount(value === "" ? 0 : Number(value));
+    }
   }
-  async function handleReffralId(e:React.ChangeEvent<any>){
-    let rfrid=e.target.value
-    setReffralId(String(rfrid))
-    console.log(reffralId)
+  async function handleReffralId(e: React.ChangeEvent<any>) {
+    let rfrid = e.target.value;
+    setReffralId(String(rfrid));
+    console.log(reffralId);
   }
-  const [isUser,setIsUser]=useState<boolean | null>(null)
+  const [isUser, setIsUser] = useState<boolean | null>(null);
   const [referralError, setReferralError] = useState<string | null>(null);
 
-   async function isValidReffralId(){
-    if (reffralId == "0x0000000000000000000000000000000000000000"){ 
+  async function isValidReffralId() {
+    if (reffralId == "0x0000000000000000000000000000000000000000") {
       setIsUser(true);
       return true;
-    }else{
-    try {
+    } else {
+      try {
         const isuser = await readContract(config, {
           abi: contractABI,
           address: contractAddress,
           functionName: "isUser",
-          args: [getAddress(reffralId)], 
+          args: [getAddress(reffralId)],
         });
         setIsUser(Boolean(isuser));
         return Boolean(isuser);
@@ -93,36 +103,35 @@ function Register() {
       setReferralError("Referral ID is required.");
       return;
     }
-  
+
     const isValid = await isValidReffralId();
     if (!isValid) {
       setReferralError("Invalid referral ID. Please check and try again.");
     } else {
-      setReferralError(null); 
-      setActiveStep(3); 
+      setReferralError(null);
+      setActiveStep(3);
+    }
   }
-}
-async function handleConnectBTN(){
-  if(!address){
-    setConnectError("wallet is not connected");
-    toast.error("you have to connect your wallet to go to the next step!")
-    return;
-  }else{
-    setConnectError("");
-    setActiveStep(1)
-    
+  async function handleConnectBTN() {
+    if (!address) {
+      setConnectError("wallet is not connected");
+      toast.error("you have to connect your wallet to go to the next step!");
+      return;
+    } else {
+      setConnectError("");
+      setActiveStep(1);
+    }
   }
-}
-async function handleApproveContinue(){
-  if (!amount || amount<10 ){
-    setApproveError("you cant enter with less than 10 USDT")
-    toast.error("you cant enter with less than 10 USDT")
-    return;
-  }else{
-    setApproveError("")
-    setActiveStep(2)
+  async function handleApproveContinue() {
+    if (!amount || amount < 10) {
+      setApproveError("you cant enter with less than 10 USDT");
+      toast.error("you cant enter with less than 10 USDT");
+      return;
+    } else {
+      setApproveError("");
+      setActiveStep(2);
+    }
   }
-}
 
   const CustomStepIcon = (props: StepIconProps) => {
     const { active, completed, icon } = props;
@@ -133,11 +142,7 @@ async function handleApproveContinue(){
           width: 24,
           height: 24,
           borderRadius: "50%",
-          backgroundColor: completed
-            ? "#4F46E5"
-            : active
-            ?  "#4F46E5" 
-            : "gray", 
+          backgroundColor: completed ? "#4F46E5" : active ? "#4F46E5" : "gray",
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
@@ -145,14 +150,14 @@ async function handleApproveContinue(){
           fontWeight: "bold",
         }}
       >
-        {completed ? <span> &#x2713; </span> : icon }
+        {completed ? <span> &#x2713; </span> : icon}
       </div>
     );
   };
   React.useEffect(() => {
     console.log("Amount updated:", amount);
   }, [amount]);
-  
+
   React.useEffect(() => {
     console.log("Referral ID updated:", reffralId);
   }, [reffralId]);
@@ -161,9 +166,14 @@ async function handleApproveContinue(){
     <main className={"mx-auto max-w-screen-xl"}>
       <div className={"flex flex-col gap-6 pt-12 px-10 mb-10"}>
         <div className={"py-4"}>
-          <span className="animate-[gradient_6s_linear_infinite] bg-[linear-gradient(to_right,theme(colors.gray.200),theme(colors.indigo.200),theme(colors.gray.50),theme(colors.indigo.300),theme(colors.gray.200))] bg-[length:200%_auto] bg-clip-text font-nacelle text-3xl font-semibold text-transparent md:text-4xl">Register</span>
+          <span className="animate-[gradient_6s_linear_infinite] bg-[linear-gradient(to_right,theme(colors.gray.200),theme(colors.indigo.200),theme(colors.gray.50),theme(colors.indigo.300),theme(colors.gray.200))] bg-[length:200%_auto] bg-clip-text font-nacelle text-3xl font-semibold text-transparent md:text-4xl">
+            Register
+          </span>
           <br />
-          <span>Please connect your wallet and then go through the registeration process</span>
+          <span>
+            Please connect your wallet and then go through the registeration
+            process
+          </span>
         </div>
 
         <Stepper activeStep={activeStep} orientation="vertical">
@@ -175,15 +185,15 @@ async function handleApproveContinue(){
               <Typography className="mb-2 pb-5 block text-sm font-medium text-indigo-200/65">
                 Connect your wallet
               </Typography>
-              <div className="flex items-center justify-center flex-col pl-5">             
-                <ConnectButton/>
-              <button
-                className={"btn btn-primary w-full mt-3"}
-                onClick={handleConnectBTN}
-              >
-                Continue
-              </button>
-              </div>             
+              <div className="flex items-center justify-center flex-col pl-5">
+                <ConnectButton />
+                <button
+                  className={"btn btn-primary w-full mt-3"}
+                  onClick={handleConnectBTN}
+                >
+                  Continue
+                </button>
+              </div>
             </StepContent>
           </Step>
 
@@ -196,10 +206,11 @@ async function handleApproveContinue(){
                 Approve the amount for it
               </Typography>
 
-              <input onChange={
-                (e)=> handleAmount(e)
-              } 
-              className="form-input w-full" value={amount}/>
+              <input
+                onChange={handleAmount}
+                className="form-input w-full"
+                value={amount === 0 ? "" : amount}
+              />
               <button
                 className="btn btn-primary"
                 onClick={() => approveToken(amount)}
@@ -212,7 +223,6 @@ async function handleApproveContinue(){
               >
                 Continue
               </button>
-
             </StepContent>
           </Step>
 
@@ -226,16 +236,20 @@ async function handleApproveContinue(){
               </Typography>
               <div className="flex items-center gap-4 mb-4">
                 <button
-                  className={`btn ${showReferralInput ? "btn-primary" : "btn-secondary"}`}
+                  className={`btn ${
+                    showReferralInput ? "btn-primary" : "btn-secondary"
+                  }`}
                   onClick={() => setShowReferralInput(true)}
                 >
                   Yes
                 </button>
                 <button
-                  className={`btn ${!showReferralInput ? "btn-primary" : "btn-secondary"}`}
+                  className={`btn ${
+                    !showReferralInput ? "btn-primary" : "btn-secondary"
+                  }`}
                   onClick={() => {
                     setShowReferralInput(false);
-                    setReffralId("0x0000000000000000000000000000000000000000"); 
+                    setReffralId("0x0000000000000000000000000000000000000000");
                   }}
                 >
                   No
@@ -251,15 +265,15 @@ async function handleApproveContinue(){
               )}
               {referralError && (
                 <Typography className="text-red-500 text-sm mt-1">
-                    {referralError}
+                  {referralError}
                 </Typography>
-                )}
-                <button
+              )}
+              <button
                 className={"btn btn-primary mt-3"}
                 onClick={handleReferralContinue}
-                >
+              >
                 Continue
-                </button>
+              </button>
             </StepContent>
           </Step>
 
@@ -271,7 +285,7 @@ async function handleApproveContinue(){
               <button
                 type="submit"
                 className="btn bg-gradient-to-t from-indigo-600 to-indigo-500 bg-[length:100%_100%] bg-[bottom] py-[10px] text-white shadow-[inset_0px_1px_0px_0px_theme(colors.white/.16)] hover:bg-[length:100%_150%]"
-                onClick={() => registerUser(amount,reffralId)}
+                onClick={() => registerUser(amount, reffralId)}
               >
                 Register
               </button>
@@ -280,12 +294,7 @@ async function handleApproveContinue(){
         </Stepper>
       </div>
     </main>
-    
   );
- }
-
+}
 
 export default Register;
-
-
-
