@@ -1,18 +1,20 @@
-
 import React, { useState } from "react";
 import { useAccount } from "wagmi";
-import { writeContract} from "@wagmi/core";
-import { contractAddress, contractABI, usdtAddress } from "./web3/helperContract";
+import { writeContract } from "@wagmi/core";
+import {
+  contractAddress,
+  contractABI,
+  usdtAddress,
+} from "./web3/helperContract";
 import { config } from "./web3/Web3Provider";
 import { erc20Abi, parseUnits } from "viem";
 
 const UpgradePlanModal = () => {
-  const [activeStep, setActiveStep] = useState(0); 
-  const [amount, setAmount] = useState<number>(10); 
+  const [activeStep, setActiveStep] = useState(0);
+  const [amount, setAmount] = useState<number>(10);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  
   const toggleModal = () => {
     setIsModalOpen(!isModalOpen);
     setActiveStep(0);
@@ -27,7 +29,7 @@ const UpgradePlanModal = () => {
         args: [contractAddress, parseUnits(amount.toString(), 6)],
       });
       console.log("Approval successful:", result);
-      setActiveStep(1); 
+      setActiveStep(1);
     } catch (error) {
       console.error("Approval failed:", error);
       setError("Approval failed. Please try again.");
@@ -44,7 +46,7 @@ const UpgradePlanModal = () => {
         args: [parseUnits(amount.toString(), 6)],
       });
       console.log("Upgrade successful:", result);
-      setActiveStep(2); 
+      setActiveStep(2);
     } catch (error) {
       console.error("Upgrade failed:", error);
       setError("Upgrade failed. Please try again.");
@@ -53,7 +55,6 @@ const UpgradePlanModal = () => {
 
   return (
     <>
-      
       <button
         onClick={toggleModal}
         className="w-full py-3 bg-indigo-600 text-white rounded-lg mt-6 hover:bg-indigo-500 transition duration-200"
@@ -66,12 +67,12 @@ const UpgradePlanModal = () => {
           <div className="bg-gray-900 rounded-lg shadow-xl w-full max-w-md p-6">
             <div className="flex justify-between items-center">
               <h2 className="animate-gradient bg-gradient-to-r from-indigo-300 via-indigo-400 to-indigo-200 bg-clip-text text-transparent text-center text-4xl md:text-5xl font-bold mb-3">
-                Upgrade Plan</h2>
+                Upgrade Plan
+              </h2>
               <button onClick={toggleModal} className="text-2xl">
                 ×
               </button>
             </div>
-
 
             <div className="my-6">
               <div className="flex justify-between mb-4">
@@ -107,9 +108,8 @@ const UpgradePlanModal = () => {
                 </div>
               </div>
 
-      
               {activeStep === 0 && (
-                <div className=" rounded-lg p-8 shadow-md text-center">
+                <div className="rounded-lg p-8 shadow-md text-center">
                   <h3 className="animate-gradient bg-gradient-to-r from-indigo-300 via-indigo-400 to-indigo-200 bg-clip-text text-transparent text-center text-2xl md:text-3xl font-bold mb-2">
                     Approve the Amount
                   </h3>
@@ -121,9 +121,15 @@ const UpgradePlanModal = () => {
                   />
                   <button
                     onClick={() => approveUpgrade(amount)}
-                    className="w-full py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition duration-200"
+                    className="w-full py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition duration-200 mb-4"
                   >
                     Approve
+                  </button>
+                  <button
+                    onClick={() => setActiveStep(1)} // Manually proceed to the next step
+                    className="w-full py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition duration-200"
+                  >
+                    Continue
                   </button>
                   {error && <p className="text-red-400 mt-4">{error}</p>}
                 </div>
