@@ -40,7 +40,7 @@ function Register() {
         address: contractAddress,
         abi: contractABI,
         functionName: "register",
-        args: [parseUnits(amount.toString(), 18), getAddress(reffralId)],
+        args: [parseUnits(amount.toString(), 6), getAddress(reffralId)],
       });
       console.log("Transaction successful:", result);
     } catch (error) {
@@ -53,7 +53,7 @@ function Register() {
         address: usdtAddress,
         abi: erc20Abi,
         functionName: "approve",
-        args: [contractAddress, parseUnits(amount.toString(), 18)],
+        args: [contractAddress, parseUnits(amount.toString(), 6)],
       });
       console.log("Approval successful:", result);
     } catch (error) {

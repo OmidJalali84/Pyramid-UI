@@ -24,7 +24,7 @@ const UpgradePlanModal = () => {
         address: usdtAddress,
         abi: erc20Abi,
         functionName: "approve",
-        args: [contractAddress, parseUnits(amount.toString(), 18)],
+        args: [contractAddress, parseUnits(amount.toString(), 6)],
       });
       console.log("Approval successful:", result);
       setActiveStep(1); 
@@ -41,7 +41,7 @@ const UpgradePlanModal = () => {
         address: contractAddress,
         abi: contractABI,
         functionName: "upgradePlan",
-        args: [parseUnits(amount.toString(), 18)],
+        args: [parseUnits(amount.toString(), 6)],
       });
       console.log("Upgrade successful:", result);
       setActiveStep(2); 

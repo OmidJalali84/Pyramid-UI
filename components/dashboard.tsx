@@ -47,7 +47,7 @@ function Dashboard() {
         address: usdtAddress,
         abi: erc20Abi,
         functionName: "approve",
-        args: [contractAddress, parseUnits(amount.toString(), 18)],
+        args: [contractAddress, parseUnits(amount.toString(), 6)],
       });
       console.log("Approval successful:", result);
     } catch (error) {
@@ -65,7 +65,7 @@ function Dashboard() {
         abi: contractABI,
         address: contractAddress,
         functionName: "upgradePlan",
-        args: [parseUnits(amount.toString(), 18)],
+        args: [parseUnits(amount.toString(), 6)],
       });
 
       console.log("Transaction sent:", tx);
@@ -100,7 +100,7 @@ function Dashboard() {
   }
   const formatTokens = (value: string) => {
     const numberValue = parseFloat(value);
-    return numberValue / 10 ** 18;
+    return numberValue / 10 ** 6;
   };
   const formatTime = (timestamp: string) => {
     const date = new Date(parseInt(timestamp) * 1000);
