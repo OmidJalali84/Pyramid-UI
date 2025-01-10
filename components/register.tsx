@@ -30,6 +30,29 @@ function Register() {
   const [connectError, setConnectError] = useState("");
   const [approveError, setApproveError] = useState("");
   const [showReferralInput, setShowReferralInput] = useState(false);
+  const [usdtBalance, setUsdtBalance] = useState(0);
+
+  // Fetch user's USDT balance
+  async function getUserUsdtBalance() {
+    if (!address) return;
+
+    try {
+      const balance = await readContract(config, {
+        address: usdtAddress,
+        abi: erc20Abi,
+        functionName: "balanceOf",
+        args: [address],
+      });
+      setUsdtBalance(Number(balance.toString()) / 1e6); // Assuming USDT has 6 decimals
+    } catch (error) {
+      console.error("Failed to fetch USDT balance:", error);
+      toast.error("Failed to fetch USDT balance.");
+    }
+  }
+
+  useEffect(() => {
+    getUserUsdtBalance();
+  }, [address]);
 
   async function registerUser(amount: number, reffralId: string) {
     if (!amount || amount < 10) {
@@ -54,7 +77,11 @@ function Register() {
   }
   async function approveToken(amount: number) {
     if (!amount || amount < 10) {
-      toast.error("Amount must be greater than 10");
+      toast.error("Amount must be greater than 10 USDT");
+      return;
+    }
+    if (usdtBalance < 10) {
+      toast.error("You're balance is less than 10 USDT");
       return;
     }
     try {
