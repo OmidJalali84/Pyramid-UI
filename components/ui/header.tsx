@@ -26,7 +26,7 @@ export default function Header() {
             className="block md:hidden"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
-            <span className="text-gray-300">☰</span>
+            <span className="text-gray-300 text-2xl md:text-3xl">☰</span>
           </button>
 
           {/* Menu */}
