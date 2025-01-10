@@ -20,6 +20,7 @@ import { writeContract, readContract } from "wagmi/actions";
 import { erc20Abi, getAddress, parseUnits } from "viem";
 import { useAccount } from "wagmi";
 import toast from "react-hot-toast";
+import { waitForTransactionReceipt } from "@wagmi/core";
 
 function Register() {
   const [activeStep, setActiveStep] = useState(0);
@@ -32,7 +33,7 @@ function Register() {
 
   async function registerUser(amount: number, reffralId: string) {
     if (!amount || amount < 10) {
-      console.error("Amount must be greater than 10");
+      toast.error("Amount must be greater than 10");
       return;
     }
     try {
@@ -42,12 +43,20 @@ function Register() {
         functionName: "register",
         args: [parseUnits(amount.toString(), 6), getAddress(reffralId)],
       });
-      console.log("Transaction successful:", result);
+
+      await waitForTransactionReceipt(config, {
+        hash: result,
+      });
+      toast.success("Transaction successful");
     } catch (error) {
-      console.error("Transaction failed:", error);
+      toast.error("Transaction failed");
     }
   }
   async function approveToken(amount: number) {
+    if (!amount || amount < 10) {
+      toast.error("Amount must be greater than 10");
+      return;
+    }
     try {
       const result = await writeContract(config, {
         address: usdtAddress,
@@ -55,9 +64,15 @@ function Register() {
         functionName: "approve",
         args: [contractAddress, parseUnits(amount.toString(), 6)],
       });
-      console.log("Approval successful:", result);
+
+      await waitForTransactionReceipt(config, {
+        hash: result,
+      });
+
+      toast.success("Approval successful:");
+      setActiveStep(2);
     } catch (error) {
-      console.error("Approval failed:", error);
+      toast.error("Approval failed:");
     }
   }
 
@@ -100,13 +115,13 @@ function Register() {
   }
   async function handleReferralContinue() {
     if (!reffralId) {
-      setReferralError("Referral ID is required.");
+      toast.error("Referral ID is required.");
       return;
     }
 
     const isValid = await isValidReffralId();
     if (!isValid) {
-      setReferralError("Invalid referral ID. Please check and try again.");
+      toast.error("Invalid referral ID. Please check and try again.");
     } else {
       setReferralError(null);
       setActiveStep(3);
@@ -114,7 +129,7 @@ function Register() {
   }
   async function handleConnectBTN() {
     if (!address) {
-      setConnectError("wallet is not connected");
+      toast.error("wallet is not connected");
       toast.error("you have to connect your wallet to go to the next step!");
       return;
     } else {
@@ -217,12 +232,6 @@ function Register() {
               >
                 Approve
               </button>
-              <button
-                className={"btn btn-primary"}
-                onClick={handleApproveContinue}
-              >
-                Continue
-              </button>
             </StepContent>
           </Step>
 
@@ -250,30 +259,33 @@ function Register() {
                   onClick={() => {
                     setShowReferralInput(false);
                     setReffralId("0x0000000000000000000000000000000000000000");
+                    setActiveStep(3);
                   }}
                 >
                   No
                 </button>
               </div>
-              {showReferralInput && (
-                <input
-                  onChange={(e) => handleReffralId(e)}
-                  className="form-input w-full"
-                  value={reffralId}
-                  placeholder="Enter referral ID"
-                />
-              )}
+              {showReferralInput ? (
+                <>
+                  <input
+                    onChange={(e) => handleReffralId(e)}
+                    className="form-input w-full"
+                    value={reffralId}
+                    placeholder="Enter referral ID"
+                  />
+                  <button
+                    className={"btn btn-primary mt-3"}
+                    onClick={handleReferralContinue}
+                  >
+                    Continue
+                  </button>
+                </>
+              ) : null}
               {referralError && (
                 <Typography className="text-red-500 text-sm mt-1">
                   {referralError}
                 </Typography>
               )}
-              <button
-                className={"btn btn-primary mt-3"}
-                onClick={handleReferralContinue}
-              >
-                Continue
-              </button>
             </StepContent>
           </Step>
 

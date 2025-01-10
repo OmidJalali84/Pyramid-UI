@@ -8,6 +8,8 @@ import {
 } from "./web3/helperContract";
 import { config } from "./web3/Web3Provider";
 import { erc20Abi, parseUnits } from "viem";
+import { waitForTransactionReceipt } from "@wagmi/core";
+import toast from "react-hot-toast";
 
 const UpgradePlanModal = () => {
   const [activeStep, setActiveStep] = useState(0);
@@ -28,10 +30,13 @@ const UpgradePlanModal = () => {
         functionName: "approve",
         args: [contractAddress, parseUnits(amount.toString(), 6)],
       });
-      console.log("Approval successful:", result);
+      await waitForTransactionReceipt(config, {
+        hash: result,
+      });
+      toast.success("Approval successful");
       setActiveStep(1);
     } catch (error) {
-      console.error("Approval failed:", error);
+      toast.error("Approval failed");
       setError("Approval failed. Please try again.");
     }
   }
@@ -45,10 +50,15 @@ const UpgradePlanModal = () => {
         functionName: "upgradePlan",
         args: [parseUnits(amount.toString(), 6)],
       });
-      console.log("Upgrade successful:", result);
+
+      await waitForTransactionReceipt(config, {
+        hash: result,
+      });
+
+      toast.success("Upgrade successful");
       setActiveStep(2);
     } catch (error) {
-      console.error("Upgrade failed:", error);
+      toast.error("Upgrade failed");
       setError("Upgrade failed. Please try again.");
     }
   }
@@ -115,8 +125,15 @@ const UpgradePlanModal = () => {
                   </h3>
                   <input
                     type="number"
-                    value={amount}
-                    onChange={(e) => setAmount(Number(e.target.value))}
+                    value={amount === 0 ? "" : amount}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === "") {
+                        setAmount(0); // Allow empty input temporarily
+                      } else if (/^\d*$/.test(value)) {
+                        setAmount(Number(value)); // Update only if the value is numeric
+                      }
+                    }}
                     className="w-full px-4 py-2 mb-4 rounded-md text-black"
                   />
                   <button
@@ -125,12 +142,7 @@ const UpgradePlanModal = () => {
                   >
                     Approve
                   </button>
-                  <button
-                    onClick={() => setActiveStep(1)} // Manually proceed to the next step
-                    className="w-full py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition duration-200"
-                  >
-                    Continue
-                  </button>
+
                   {error && <p className="text-red-400 mt-4">{error}</p>}
                 </div>
               )}
