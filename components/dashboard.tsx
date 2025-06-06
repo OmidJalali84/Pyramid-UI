@@ -25,7 +25,7 @@ function Dashboard() {
     setIsModalOpen(!isModalOpen);
   };
 
-  async function getUserInfo() {
+  async function getUserInfo() { 
     try {
       if (!address) return;
 

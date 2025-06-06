@@ -17,20 +17,25 @@ import {
 } from "./web3/helperContract";
 import { config } from "@/components/web3/Web3Provider";
 import { writeContract, readContract } from "wagmi/actions";
-import { erc20Abi, getAddress, parseUnits } from "viem";
+import { erc20Abi, getAddress, parseUnits, zeroAddress } from "viem";
 import { useAccount } from "wagmi";
 import toast from "react-hot-toast";
 import { waitForTransactionReceipt } from "@wagmi/core";
+import { getUserByUsername, registerUser } from "./web3/actions";
 
 function Register() {
   const [activeStep, setActiveStep] = useState(0);
   const [amount, setAmount] = useState(10);
-  const [reffralId, setReffralId] = useState("");
+  const [referralId, setReffralId] = useState("");
   const { address, isConnecting, isDisconnected } = useAccount();
   const [connectError, setConnectError] = useState("");
   const [approveError, setApproveError] = useState("");
   const [showReferralInput, setShowReferralInput] = useState(false);
   const [usdtBalance, setUsdtBalance] = useState(0);
+  const [username, setUsername] = useState("");
+  const [forToken, setForToken] = useState(false);
+
+  const { data: userInfo } = getUserByUsername(referralId);
 
   // Fetch user's USDT balance
   async function getUserUsdtBalance() {
@@ -43,7 +48,8 @@ function Register() {
         functionName: "balanceOf",
         args: [address],
       });
-      setUsdtBalance(Number(balance.toString()) / 1e6); // Assuming USDT has 6 decimals
+      console.log(balance.toString());
+      setUsdtBalance(Number(balance.toString()) / 1e18); // Assuming USDT has 6 decimals
     } catch (error) {
       console.error("Failed to fetch USDT balance:", error);
       toast.error("Failed to fetch USDT balance.");
@@ -54,25 +60,36 @@ function Register() {
     getUserUsdtBalance();
   }, [address]);
 
-  async function registerUser(amount: number, reffralId: string) {
+  async function register() {
     if (!amount || amount < 10) {
       toast.error("Amount must be greater than 10");
       return;
+    } else if (!referralId) {
+      toast.error("Invalid referrerl ID");
+      return;
+    } else if (!address) {
+      toast.error("Please first connect your wallet");
+      return;
+    } else if (username === "") {
+      toast.error("Invalid username Entered");
+      return;
     }
+
     try {
-      const result = await writeContract(config, {
-        address: contractAddress,
-        abi: contractABI,
-        functionName: "register",
-        args: [parseUnits(amount.toString(), 6), getAddress(reffralId)],
-      });
+      const tx = await registerUser(
+        address,
+        userInfo?.userAddress,
+        amount,
+        username,
+        forToken
+      );
 
       await waitForTransactionReceipt(config, {
-        hash: result,
+        hash: tx,
       });
       toast.success("Transaction successful");
     } catch (error) {
-      toast.error("Transaction failed");
+      toast.error("Transaction failed: " + error);
     }
   }
   async function approveToken(amount: number) {
@@ -85,11 +102,12 @@ function Register() {
       return;
     }
     try {
+      const amountToApprove = (amount * 105) / 100;
       const result = await writeContract(config, {
         address: usdtAddress,
         abi: erc20Abi,
         functionName: "approve",
-        args: [contractAddress, parseUnits(amount.toString(), 6)],
+        args: [contractAddress, parseUnits(amountToApprove.toString(), 18)],
       });
 
       await waitForTransactionReceipt(config, {
@@ -114,40 +132,19 @@ function Register() {
   async function handleReffralId(e: React.ChangeEvent<any>) {
     let rfrid = e.target.value;
     setReffralId(String(rfrid));
-    console.log(reffralId);
   }
-  const [isUser, setIsUser] = useState<boolean | null>(null);
+  async function handleSetUsername(e: React.ChangeEvent<any>) {
+    let username = e.target.value;
+    setUsername(String(username));
+  }
   const [referralError, setReferralError] = useState<string | null>(null);
 
-  async function isValidReffralId() {
-    if (reffralId == "0x0000000000000000000000000000000000000000") {
-      setIsUser(true);
-      return true;
-    } else {
-      try {
-        const isuser = await readContract(config, {
-          abi: contractABI,
-          address: contractAddress,
-          functionName: "isUser",
-          args: [getAddress(reffralId)],
-        });
-        setIsUser(Boolean(isuser));
-        return Boolean(isuser);
-      } catch (error) {
-        console.error("Error validating referral ID:", error);
-        setIsUser(false);
-        return false;
-      }
-    }
-  }
   async function handleReferralContinue() {
-    if (!reffralId) {
+    if (!referralId) {
       toast.error("Referral ID is required.");
       return;
     }
-
-    const isValid = await isValidReffralId();
-    if (!isValid) {
+    if (userInfo?.userAddress === zeroAddress) {
       toast.error("Invalid referral ID. Please check and try again.");
     } else {
       setReferralError(null);
@@ -201,8 +198,8 @@ function Register() {
   }, [amount]);
 
   React.useEffect(() => {
-    console.log("Referral ID updated:", reffralId);
-  }, [reffralId]);
+    console.log("Referral ID updated:", referralId);
+  }, [referralId]);
 
   return (
     <main className={"mx-auto max-w-screen-xl"}>
@@ -268,46 +265,23 @@ function Register() {
             </StepLabel>
             <StepContent>
               <Typography className="mb-1 block text-sm font-medium text-indigo-200/65">
-                Do you have a referral?
+                Enter Referral ID
               </Typography>
-              <div className="flex items-center gap-4 mb-4">
+
+              <>
+                <input
+                  onChange={(e) => handleReffralId(e)}
+                  className="form-input w-full"
+                  value={referralId}
+                  placeholder="Enter referral ID"
+                />
                 <button
-                  className={`btn ${
-                    showReferralInput ? "btn-primary" : "btn-secondary"
-                  }`}
-                  onClick={() => setShowReferralInput(true)}
+                  className={"btn btn-primary mt-3"}
+                  onClick={handleReferralContinue}
                 >
-                  Yes
+                  Continue
                 </button>
-                <button
-                  className={`btn ${
-                    !showReferralInput ? "btn-primary" : "btn-secondary"
-                  }`}
-                  onClick={() => {
-                    setShowReferralInput(false);
-                    setReffralId("0x0000000000000000000000000000000000000000");
-                    setActiveStep(3);
-                  }}
-                >
-                  No
-                </button>
-              </div>
-              {showReferralInput ? (
-                <>
-                  <input
-                    onChange={(e) => handleReffralId(e)}
-                    className="form-input w-full"
-                    value={reffralId}
-                    placeholder="Enter referral ID"
-                  />
-                  <button
-                    className={"btn btn-primary mt-3"}
-                    onClick={handleReferralContinue}
-                  >
-                    Continue
-                  </button>
-                </>
-              ) : null}
+              </>
               {referralError && (
                 <Typography className="text-red-500 text-sm mt-1">
                   {referralError}
@@ -321,10 +295,30 @@ function Register() {
               <span className={styles.label}>Register</span>
             </StepLabel>
             <StepContent>
+              <div className="flex items-center gap-4 mb-4">
+                <button
+                  className={`btn ${"btn-primary"}`}
+                  onClick={() => setForToken(true)}
+                >
+                  Token
+                </button>
+                <button
+                  className={`btn ${"btn-primary"}`}
+                  onClick={() => setForToken(false)}
+                >
+                  Point
+                </button>
+              </div>
+              <input
+                onChange={(e) => handleSetUsername(e)}
+                className="form-input w-full"
+                value={username}
+                placeholder="Enter username"
+              />
               <button
                 type="submit"
                 className="btn bg-gradient-to-t from-indigo-600 to-indigo-500 bg-[length:100%_100%] bg-[bottom] py-[10px] text-white shadow-[inset_0px_1px_0px_0px_theme(colors.white/.16)] hover:bg-[length:100%_150%]"
-                onClick={() => registerUser(amount, reffralId)}
+                onClick={() => register()}
               >
                 Register
               </button>
